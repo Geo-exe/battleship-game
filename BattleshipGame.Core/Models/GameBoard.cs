@@ -112,7 +112,7 @@ public class GameBoard(GameSettings settings)
 
         if (ship != null)
         {
-            ship.RegisterHit();
+            ship.RegisterHit(coord);
 
             if (ship.IsSunk)
             {

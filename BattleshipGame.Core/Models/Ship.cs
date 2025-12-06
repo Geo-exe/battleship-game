@@ -7,6 +7,8 @@ namespace BattleshipGame.Core.Models;
 /// <param name="size">The length of the ship in grid cells.</param>
 public class Ship(string name, int size)
 {
+    private readonly HashSet<Coordinate> _hitLocations = [];
+
     /// <summary>
     /// Gets the display name of the ship.
     /// </summary>
@@ -36,9 +38,15 @@ public class Ship(string name, int size)
     public bool IsSunk => Hits >= Size;
 
     /// <summary>
-    /// Registers damage to the ship by incrementing the hit counter.
+    /// Registers damage to the ship at a specific location.
+    /// Idempotent: firing at the same spot twice will not increase the hit counter.
     /// </summary>
-    public void RegisterHit() => Hits++;
+    /// <param name="location">The coordinate being hit.</param>
+    public void RegisterHit(Coordinate location)
+    {
+        if (_hitLocations.Add(location))
+            Hits++;
+    }
 
     /// <summary>
     /// Assigns the ship to a specific set of coordinates on the grid.
@@ -46,6 +54,9 @@ public class Ship(string name, int size)
     /// <param name="coordinates">The list of coordinates the ship will occupy.</param>
     public void Place(List<Coordinate> coordinates)
     {
+        if (coordinates.Count != Size)
+            throw new ArgumentException($"Ship {Name} requires {Size} coordinates, but received {coordinates.Count}.");
+            
         Coordinates = coordinates;
     }
 }
