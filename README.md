@@ -23,6 +23,13 @@ dotnet run --project BattleshipGame.Web
 
 Open the URL shown in the terminal (e.g., **http://localhost:xxxx**) to play.
 
+
+### 3. Tests
+
+```bash
+dotnet test
+```
+
 ### ⚙️ Configuration
 Game rules (Board size and Ships) can be configured in BattleshipGame.Api/appsettings.json:
 
