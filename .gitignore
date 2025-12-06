@@ -1,0 +1,9 @@
+# JetBrains series IDEs
+.idea/
+
+# Visual Studio Code
+.vscode/
+
+# .NET
+[Bb]in/
+[Oo]bj/
