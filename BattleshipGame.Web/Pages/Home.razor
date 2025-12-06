@@ -1,0 +1,170 @@
+﻿@page "/"
+@using BattleshipGame.Core.DTOs
+@using BattleshipGame.Core.Models
+@using BattleshipGame.Core.Configurations 
+@inject HttpClient Http
+
+<PageTitle>Battleship</PageTitle>
+
+<div class="container text-center mt-4">
+    <h1>🚢 Battleship Battle</h1>
+
+    @if (config == null)
+    {
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading config...</span>
+        </div>
+    }
+    else
+    {
+        <div class="my-4">
+            @if (gameId == Guid.Empty)
+            {
+                <button class="btn btn-primary btn-lg" @onclick="InitGame">Start New Game</button>
+                <div class="mt-2 text-muted small">
+                    Map Size: <strong>@config.BoardSize x @config.BoardSize</strong>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-success d-inline-block">
+                    Game ID: <strong>@gameId</strong>
+                </div>
+                <button class="btn btn-outline-secondary ms-2" @onclick="InitGame">Reset</button>
+            }
+        </div>
+
+        @if (!string.IsNullOrEmpty(message))
+        {
+            <div class="alert @alertClass">@message</div>
+        }
+
+        @if (gameId != Guid.Empty)
+        {
+            <div class="d-flex justify-content-center">
+                <div class="battle-grid" 
+                     style="grid-template-columns: repeat(@config.BoardSize, 1fr);">
+                    
+                    @for (int y = 0; y < config.BoardSize; y++)
+                    {
+                        @for (int x = 0; x < config.BoardSize; x++)
+                        {
+                            int localX = x;
+                            int localY = y;
+                            var cellStatus = GetCellStatus(localX, localY);
+
+                            <div class="cell @cellStatus" 
+                                 @onclick="() => FireAt(localX, localY)">
+                                @if(cellStatus == "hit") { <span>💥</span> }
+                                else if(cellStatus == "miss") { <span>🌊</span> }
+                                else if(cellStatus == "sank") { <span>💀</span> }
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+            
+            <div class="mt-4 text-start mx-auto" style="max-width: 600px;">
+                <h5>Battle Log:</h5>
+                <ul class="list-group">
+                    @foreach (var log in logs)
+                    {
+                        <li class="list-group-item">@log</li>
+                    }
+                </ul>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private GameSettings? config;
+    
+    private Guid gameId = Guid.Empty;
+    private string message = "";
+    private string alertClass = "alert-info";
+    private List<string> logs = new();
+    private Dictionary<string, string> gridState = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try 
+        {
+            config = await Http.GetFromJsonAsync<GameSettings>($"api/Game/config");
+        }
+        catch(Exception)
+        {
+            message = "Fatal Error: Could not load game config. Is API running?";
+            alertClass = "alert-danger";
+        }
+    }
+
+    private async Task InitGame()
+    {
+        try
+        {
+            message = "Initializing...";
+            gridState.Clear();
+            logs.Clear();
+            
+            var response = await Http.PostAsync($"api/Game/init", null);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<InitGameResponse>();
+
+                gameId = result!.GameId;
+                message = "Battle initialized! Fire at will.";
+                alertClass = "alert-success";
+                logs.Add($"Game started: {gameId}");
+            }
+            else 
+            {
+                message = "Error initializing game.";
+                alertClass = "alert-danger";
+            }
+        }
+        catch (Exception ex)
+        {
+            message = $"Network Error: {ex.Message}";
+            alertClass = "alert-danger";
+        }
+    }
+
+    private async Task FireAt(int x, int y)
+    {
+        string key = $"{x},{y}";
+        if (gridState.ContainsKey(key)) return;
+
+        try 
+        {
+            var payload = new FireRequest(gameId, x, y);
+            var response = await Http.PostAsJsonAsync($"api/Game/fire", payload);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<FireResponse>();
+                
+                string status = "miss";
+                if (result!.Result.Contains("Hit")) status = "hit";
+                if (result.Result.Contains("Sank")) status = "sank";
+                
+                gridState[key] = status;
+                
+                logs.Insert(0, $"({x},{y}): {result.Result}");
+                message = result.Result;
+            }
+            else
+            {
+                message = "Error firing shot.";
+            }
+        }
+        catch (Exception ex)
+        {
+            message = $"Error: {ex.Message}";
+        }
+    }
+    
+    private string GetCellStatus(int x, int y) => 
+        gridState.TryGetValue($"{x},{y}", out var s) ? s : "";
+}

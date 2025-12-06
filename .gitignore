@@ -1,9 +1,40 @@
-# JetBrains series IDEs
-.idea/
-
-# Visual Studio Code
-.vscode/
-
-# .NET
+## --- BUILD & BINARIES ---
 [Bb]in/
 [Oo]bj/
+
+## --- VISUAL STUDIO & IDE ---
+.vs/
+*.user
+*.userosscache
+*.suo
+*.sln.docstates
+
+## --- VS CODE ---
+.vscode/*
+!.vscode/launch.json
+!.vscode/tasks.json
+!.vscode/extensions.json
+
+## --- RIDER (JETBRAINS) ---
+.idea/
+*.sln.iml
+
+## --- TESTING ---
+TestResults/
+*.trdx
+coverage.json
+*.coverlet.json
+
+## --- OS GENERATED FILES ---
+# Mac
+.DS_Store
+# Windows
+Thumbs.db
+Desktop.ini
+
+## --- CONFIGURATION & SECRETS ---
+appsettings.Local.json
+
+## --- BLAZOR / WEB ---
+node_modules/
+wwwroot/_framework/
